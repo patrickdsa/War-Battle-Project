@@ -1,0 +1,23 @@
+#E
+ENEMY_COOLDOWN = 1000 #miliseconds
+
+#C
+COLS = 5
+
+#F
+fps = 60
+
+#R
+ROWS = 5
+
+#S
+SCREEN_HEIGHT = 800
+SCREEN_WIDTH = 600
+
+#COLORS
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+YELLOW = (255, 255, 0)
