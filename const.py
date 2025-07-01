@@ -3,9 +3,14 @@ ENEMY_COOLDOWN = 1000 #miliseconds
 
 #C
 COLS = 5
+COUNTDOWN = 3
 
 #F
 fps = 60
+
+#G
+
+GAME_OVER = 0 # 0 = no over, 1 = player win, -1 = player lost
 
 #R
 ROWS = 5

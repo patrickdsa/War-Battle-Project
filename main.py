@@ -2,8 +2,9 @@ import pygame
 from pygame import mixer
 from pygame.locals import *
 import random
-from const import SCREEN_HEIGHT, SCREEN_WIDTH, fps, YELLOW, RED, ROWS, COLS, ENEMY_COOLDOWN
+from const import SCREEN_HEIGHT, SCREEN_WIDTH, fps, YELLOW, RED, ROWS, COLS, ENEMY_COOLDOWN, COUNTDOWN, WHITE, GAME_OVER
 
+pygame.init()
 pygame.mixer.pre_init(44100, -16, 2, 512)
 mixer.init()
 
@@ -18,6 +19,10 @@ tankshot.set_volume(0.25)
 
 enemy_shot = pygame.mixer.Sound('assets/sounds/enemyshot.wav')
 enemy_shot.set_volume(0.25)
+
+font30 = pygame.font.SysFont('Constantia', 30)
+font40 = pygame.font.SysFont('Constantia', 40)
+
 # fps
 clock = pygame.time.Clock()
 
@@ -31,6 +36,13 @@ background = pygame.transform.scale(background_load, (SCREEN_WIDTH, SCREEN_HEIGH
 
 def draw_background():
     screen.blit(background, (0, 0))
+
+# creating texts
+
+def draw_text (text, font, text_color,x, y):
+    img = font.render(text, True, text_color)
+    screen.blit(img, (x, y))
+
 
 
 # create class
@@ -49,6 +61,7 @@ class Tank(pygame.sprite.Sprite):
     def update(self):
         speed = 8
         cooldown = 500
+        GAME_OVER = 0
         # Keys events
         key = pygame.key.get_pressed()
         if key[pygame.K_LEFT] and self.rect.left > 0:
@@ -66,20 +79,28 @@ class Tank(pygame.sprite.Sprite):
             bullet_group.add(bullet)
             self.last_shot = time_now
 
+        # improving pixel colision
+        self.mask = pygame.mask.from_surface(self.image)
+
         # hp bar
         pygame.draw.rect(screen, RED, (self.rect.x, (self.rect.bottom - 25), self.rect.width, 15))
         if self.hp_remaining > 0:
             pygame.draw.rect(screen, YELLOW, (self.rect.x, (self.rect.bottom - 25),
                                               int(self.rect.width * (self.hp_remaining / self.hp_start)), 15))
+        elif self.hp_remaining <= 0:
+            explosion = Explosion(self.rect.centerx, self.rect.centery, 3)
+            explosion_group.add (explosion)
+            self.kill()
+            GAME_OVER = -1
+        return GAME_OVER
 
-        #improving pixel colision
-        self.mask = pygame.mask.from_surface(self.image)
+
 
 class Bullets(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load('assets/bullets/greenbullet.png')
-        self.image = pygame.transform.scale(self.image, (90, 90))
+        self.image = pygame.image.load('assets/bullets/TankBullet.png')
+        self.image = pygame.transform.scale(self.image, (50, 50))
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
 
@@ -114,8 +135,8 @@ class Enemy(pygame.sprite.Sprite):
 class EnemyBullets (pygame.sprite.Sprite):
         def __init__(self, x, y):
             pygame.sprite.Sprite.__init__(self)
-            self.image = pygame.image.load('assets/bullets/greenbullet.png')
-            self.image = pygame.transform.scale(self.image, (90, 90))
+            self.image = pygame.image.load('assets/bullets/EnemyBullet.png')
+            self.image = pygame.transform.scale(self.image, (50, 50))
             self.rect = self.image.get_rect()
             self.rect.center = [x, y]
 
@@ -125,7 +146,7 @@ class EnemyBullets (pygame.sprite.Sprite):
                 self.kill()
             if pygame.sprite.spritecollide(self, tank_group, False, pygame.sprite.collide_mask):
                 self.kill()
-                explosion1_sound.play()
+                enemy_shot.play()
                 tank.hp_remaining -= 1
                 explosion = Explosion(self.rect.centerx, self.rect.centery, 1)
                 explosion_group.add(explosion)
@@ -167,6 +188,7 @@ class Explosion(pygame.sprite.Sprite):
 
 
 last_enemy_shot = pygame.time.get_ticks()
+last_count = pygame.time.get_ticks()
 
 # sprite groups
 tank_group = pygame.sprite.Group()
@@ -192,29 +214,40 @@ while True:
     # background
     draw_background()
 
-    #create alien shoots
-    time_now = pygame.time.get_ticks()
-    if time_now - last_enemy_shot > ENEMY_COOLDOWN and len(enemy_bullets_group) < 5 and len(enemy_group) > 0:
-        enemy_attack = random.choice(enemy_group.sprites())
-        enemy_bullet = EnemyBullets(enemy_attack.rect.centerx, enemy_attack.rect.bottom)
-        enemy_bullets_group.add(enemy_bullet)
-        last_enemy_shot = time_now
+    if COUNTDOWN == 0:
 
+        #create alien shoots
+        time_now = pygame.time.get_ticks()
+        if time_now - last_enemy_shot > ENEMY_COOLDOWN and len(enemy_bullets_group) < 5 and len(enemy_group) > 0:
+            enemy_attack = random.choice(enemy_group.sprites())
+            enemy_bullet = EnemyBullets(enemy_attack.rect.centerx, enemy_attack.rect.bottom)
+            enemy_bullets_group.add(enemy_bullet)
+            last_enemy_shot = time_now
 
+        if len (enemy_group) == 0:
+            GAME_OVER = 1
 
+        if GAME_OVER == 0:
+            # update groups
+            GAME_OVER = tank.update()
+            bullet_group.update()
+            enemy_group.update()
+            enemy_bullets_group.update()
+        else:
+            if GAME_OVER == -1:
+                draw_text('GAME OVER!', font40, WHITE, int(SCREEN_WIDTH / 2 - 100), int(SCREEN_HEIGHT / 2 + 50))
+            if GAME_OVER == 1:
+                draw_text('YOU WIN!', font40, WHITE, int(SCREEN_WIDTH / 2 - 100), int(SCREEN_HEIGHT / 2 + 50))
 
-    # check events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            quit()
-
-    # update sprite groups
-    tank.update()
-    bullet_group.update()
-    enemy_group.update()
-    enemy_bullets_group.update()
     explosion_group.update()
+
+    if COUNTDOWN > 0:
+        draw_text('GET READY FOR BATTLE', font40, WHITE, int(SCREEN_WIDTH / 2 - 110), int(SCREEN_HEIGHT / 2 + 50))
+        draw_text(str(COUNTDOWN), font40, WHITE, int(SCREEN_WIDTH / 2 - 10), int(SCREEN_HEIGHT / 2 + 100))
+        count_timer = pygame.time.get_ticks()
+        if count_timer - last_count > 1000:
+            COUNTDOWN -= 1
+            last_count = count_timer
 
     # draw sprite groups
     tank_group.draw(screen)
@@ -222,5 +255,11 @@ while True:
     enemy_group.draw(screen)
     enemy_bullets_group.draw(screen)
     explosion_group.draw(screen)
+
+    # check events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
 
     pygame.display.update()
