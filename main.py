@@ -4,54 +4,14 @@ from pygame.locals import *
 import random
 from const import SCREEN_HEIGHT, SCREEN_WIDTH, fps, YELLOW, RED, ROWS, COLS, ENEMY_COOLDOWN, COUNTDOWN, WHITE, GAME_OVER
 
-pygame.init()
-pygame.mixer.pre_init(44100, -16, 2, 512)
-mixer.init()
 
-explosion1_sound = pygame.mixer.Sound('assets/sounds/explosion.wav')
-explosion1_sound.set_volume(0.25)
-
-#explosion2_sound = pygame.mixer.Sound('sounds/explosion2.wav')
-#explosion1_sound.set_volume(0.25)
-
-tankshot = pygame.mixer.Sound('assets/sounds/tankshot.wav')
-tankshot.set_volume(0.25)
-
-enemy_shot = pygame.mixer.Sound('assets/sounds/enemyshot.wav')
-enemy_shot.set_volume(0.25)
-
-font30 = pygame.font.SysFont('Constantia', 30)
-font40 = pygame.font.SysFont('Constantia', 40)
-
-# fps
-clock = pygame.time.Clock()
-
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('War Battle')
-
-# load background
-background_load = pygame.image.load('assets/background_imgs/War.png')
-background = pygame.transform.scale(background_load, (SCREEN_WIDTH, SCREEN_HEIGHT))
-
-
-def draw_background():
-    screen.blit(background, (0, 0))
-
-# creating texts
-
-def draw_text (text, font, text_color,x, y):
-    img = font.render(text, True, text_color)
-    screen.blit(img, (x, y))
-
-
-
-# create class
-
+# create classes
+#Player
 class Tank(pygame.sprite.Sprite):
     def __init__(self, x, y, hp):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load('assets/tank/tank.png')
-        self.image = pygame.transform.scale(self.image, (190, 190)).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (160, 160)).convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.center = [x, y]
         self.hp_start = hp
@@ -110,7 +70,7 @@ class Bullets(pygame.sprite.Sprite):
             self.kill()
         if pygame.sprite.spritecollide(self, enemy_group, True):
             self.kill()
-            explosion1_sound.play()
+            explosion_sound.play()
             explosion = Explosion(self.rect.centerx, self.rect.centery, 2)
             explosion_group.add(explosion)
 
@@ -185,6 +145,58 @@ class Explosion(pygame.sprite.Sprite):
         if self.index >= len (self.images) - 1 and self.counter >= explosion_speed:
             self.kill()
 
+#functions
+
+def draw_background():
+    screen.blit(background, (0, 0))
+
+# creating texts
+
+def draw_text (text, font, text_color,x, y):
+    img = font.render(text, True, text_color)
+    screen.blit(img, (x, y))
+
+def create_enemy():
+    for row in range(ROWS):
+        for item in range(COLS):
+            enemy = Enemy(100 + item * 100,  100 + row * 70)
+            enemy_group.add(enemy)
+
+
+pygame.init()
+pygame.mixer.pre_init(44100, -16, 2, 512)
+mixer.init()
+
+
+# sounds
+explosion_sound = pygame.mixer.Sound('assets/sounds/explosion.wav')
+explosion_sound.set_volume(0.25)
+
+death_sound = pygame.mixer.Sound('assets/sounds/death_sound.wav')
+death_sound.set_volume(0.25)
+
+tankshot = pygame.mixer.Sound('assets/sounds/tankshot.wav')
+tankshot.set_volume(0.25)
+
+win_sound = pygame.mixer.Sound('assets/sounds/win_sound.mp3')
+win_sound.set_volume(0.25)
+
+enemy_shot = pygame.mixer.Sound('assets/sounds/enemyshot.wav')
+enemy_shot.set_volume(0.25)
+
+font30 = pygame.font.SysFont('Constantia', 30)
+font40 = pygame.font.SysFont('Constantia', 40)
+
+# fps
+clock = pygame.time.Clock()
+
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption('War Battle')
+
+# load background
+background_load = pygame.image.load('assets/background_imgs/War.png')
+background = pygame.transform.scale(background_load, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
 
 
 last_enemy_shot = pygame.time.get_ticks()
@@ -197,12 +209,9 @@ enemy_group = pygame.sprite.Group()
 enemy_bullets_group = pygame.sprite.Group()
 explosion_group = pygame.sprite.Group()
 
-def create_enemy():
-    for row in range(ROWS):
-        for item in range(COLS):
-            enemy = Enemy(100 + item * 100,  100 + row * 70)
-            enemy_group.add(enemy)
 
+
+# Main
 create_enemy()
 tank = Tank(int(SCREEN_WIDTH / 2), int(SCREEN_HEIGHT - 100), 3)
 tank_group.add(tank)
@@ -235,14 +244,16 @@ while True:
             enemy_bullets_group.update()
         else:
             if GAME_OVER == -1:
+                death_sound.play()
                 draw_text('GAME OVER!', font40, WHITE, int(SCREEN_WIDTH / 2 - 100), int(SCREEN_HEIGHT / 2 + 50))
             if GAME_OVER == 1:
+                win_sound.play()
                 draw_text('YOU WIN!', font40, WHITE, int(SCREEN_WIDTH / 2 - 100), int(SCREEN_HEIGHT / 2 + 50))
 
     explosion_group.update()
 
     if COUNTDOWN > 0:
-        draw_text('GET READY FOR BATTLE', font40, WHITE, int(SCREEN_WIDTH / 2 - 110), int(SCREEN_HEIGHT / 2 + 50))
+        draw_text('GET READY FOR BATTLE', font40, WHITE, int(SCREEN_WIDTH / 2 - 230), int(SCREEN_HEIGHT / 2 + 50))
         draw_text(str(COUNTDOWN), font40, WHITE, int(SCREEN_WIDTH / 2 - 10), int(SCREEN_HEIGHT / 2 + 100))
         count_timer = pygame.time.get_ticks()
         if count_timer - last_count > 1000:
