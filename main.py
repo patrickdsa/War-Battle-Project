@@ -1,4 +1,4 @@
-import game
+from src.game import menu
 
-game = game()
+game = menu.run()
 game.run()
